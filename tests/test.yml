@@ -1,0 +1,138 @@
+---
+- hosts: localhost
+  vars:
+    ansible_connection: local
+    rancher_url: "http://url.to.rancher:8080/"
+    access_key: "XXXX"
+    secret_key: "YYYYYYYY"
+  tasks:
+
+    - name: Ensure environment TEST is created
+      rancher_environment:
+        url: "{{ rancher_url }}"
+        access_key: "{{ access_key }}"
+        secret_key: "{{ secret_key }}"
+        environment: TEST
+        template: Cattle
+        description: This is my test environment
+      register: environment
+
+    - debug:
+        msg: "{{ environment }}"
+
+    - pause:
+        prompt: "wait"
+
+    - name: Ensure environment TEST is removed
+      rancher_environment:
+        url: "{{ rancher_url }}"
+        access_key: "{{ access_key }}"
+        secret_key: "{{ secret_key }}"
+        environment: TEST
+        state: absent
+
+    - pause:
+        prompt: "wait"
+
+    - name: Ensure Janitor is launched
+      rancher_stack:
+        url: "{{ rancher_url }}"
+        access_key: "{{ access_key }}"
+        secret_key: "{{ secret_key }}"
+        environment: "Default"
+        catalog: "community"
+        stack: "Janitor"
+        template: "janitor"
+        version: "v1.7.1"
+        answers:
+          FREQUENCY: Ceci est un test
+
+    - pause:
+        prompt: "wait"
+
+    - name: Ensure we can retrieve Janitor stack and services
+      rancher_stack:
+        url: "{{ rancher_url }}"
+        access_key: "{{ access_key }}"
+        secret_key: "{{ secret_key }}"
+        environment: "Default"
+        stack: "Janitor"
+      register: "janitor_stack"
+
+    - debug:
+        msg: "{{ janitor_stack.stack }}"
+
+    - debug:
+        msg: "{{ janitor_stack.services }}"
+
+    - pause:
+        prompt: "wait"
+
+    - name: Ensure Janitor is launched with different parameters
+      rancher_stack:
+        url: "{{ rancher_url }}"
+        access_key: "{{ access_key }}"
+        secret_key: "{{ secret_key }}"
+        environment: "Default"
+        catalog: "community"
+        stack: "Janitor-{{ item }}"
+        template: "janitor"
+        version: "v1.7.1"
+        answers:
+          KEEP: "{{ item }}"
+      with_items:
+        - coucou1
+        - coucou2
+        - coucou3
+
+    - pause:
+        prompt: "wait"
+
+    - name: Ensure Janitor is launched with higher frequency
+      rancher_stack:
+        url: "{{ rancher_url }}"
+        access_key: "{{ access_key }}"
+        secret_key: "{{ secret_key }}"
+        environment: "Default"
+        catalog: "community"
+        stack: "Janitor"
+        template: "janitor"
+        version: "v1.7.1"
+        answers:
+          FREQUENCY: 20000
+          KEEP: "coucou"
+
+    - pause:
+        prompt: "wait"
+
+    - name: Ensure Janitor stays as-is
+      rancher_stack:
+        url: "{{ rancher_url }}"
+        access_key: "{{ access_key }}"
+        secret_key: "{{ secret_key }}"
+        environment: "Default"
+        catalog: "community"
+        stack: "Janitor"
+        template: "janitor"
+        version: "v1.7.1"
+        answers:
+          FREQUENCY: 20000
+          KEEP: "coucou"
+
+    - pause:
+        prompt: "wait"
+
+    - name: Ensure Janitors are removed
+      rancher_stack:
+        url: "{{ rancher_url }}"
+        access_key: "{{ access_key }}"
+        secret_key: "{{ secret_key }}"
+        environment: "Default"
+        stack: "{{ item }}"
+        state: "absent"
+        wait: "no"
+      with_items:
+        - Janitor
+        - Janitor-coucou1
+        - Janitor-coucou2
+        - Janitor-coucou3
