@@ -82,7 +82,7 @@ class RancherStackAnsibleModule(AnsibleModule):
         if self.boolean(self.params['validate_certs']) == False:
             logging.captureWarnings(True)
         self._session = requests.session()
-        self._session.verify = self.params['validate_certs']
+        self._session.verify = self.boolean(self.params['validate_certs'])
         self._session.auth = (self.params['access_key'], self.params['secret_key'])
 
     def process(self):
